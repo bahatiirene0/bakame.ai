@@ -1,0 +1,585 @@
+/**
+ * Global Styles for Bakame.ai (ChatGPT-style)
+ *
+ * Expert-level design with:
+ * - Inter font with optimized rendering
+ * - Syntax highlighting for code
+ * - Clear visual hierarchy
+ * - Smooth animations
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================
+   CSS Variables - Enhanced Color Palette
+   ============================================ */
+:root {
+  /* Backgrounds with clear hierarchy */
+  --background: #FFFFFF;
+  --background-secondary: #F9FAFB;
+  --background-chat: #FFFFFF;
+  --background-code: #1E1E1E;
+  --background-code-header: #2D2D2D;
+
+  /* Text colors - optimized for clarity */
+  --foreground: #111827;
+  --foreground-secondary: #4B5563;
+  --foreground-muted: #6B7280;
+
+  /* Accent colors */
+  --accent-green: #22C55E;
+  --accent-blue: #3B82F6;
+  --accent-yellow: #EAB308;
+
+  /* Borders */
+  --border-light: #E5E7EB;
+  --border-medium: #D1D5DB;
+
+  /* Syntax highlighting - One Dark inspired */
+  --syntax-keyword: #C678DD;
+  --syntax-string: #98C379;
+  --syntax-number: #D19A66;
+  --syntax-function: #61AFEF;
+  --syntax-comment: #7F848E;
+  --syntax-variable: #E06C75;
+  --syntax-operator: #56B6C2;
+  --syntax-class: #E5C07B;
+}
+
+.dark {
+  /* Dark mode - distinct layers */
+  --background: #0A0A0A;
+  --background-secondary: #111111;
+  --background-chat: #171717;
+  --background-code: #0D0D0D;
+  --background-code-header: #1A1A1A;
+
+  /* Text colors */
+  --foreground: #F9FAFB;
+  --foreground-secondary: #D1D5DB;
+  --foreground-muted: #9CA3AF;
+
+  /* Borders */
+  --border-light: #262626;
+  --border-medium: #404040;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ============================================
+   Base Styles - Crisp Text Rendering
+   ============================================ */
+html {
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+  /* Crisp text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Light mode - sharper text */
+@media (prefers-color-scheme: light) {
+  body:not(.dark) {
+    -webkit-font-smoothing: auto;
+  }
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+/* Main scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+/* Sidebar custom scrollbar - thin and elegant */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(59, 130, 246, 0.3));
+  border-radius: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.5), rgba(59, 130, 246, 0.5));
+}
+
+/* ============================================
+   Animations - Premium
+   ============================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes typingDot {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.5); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-fadeInScale {
+  animation: fadeInScale 0.3s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-typingDot {
+  animation: typingDot 1.2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* ============================================
+   Streaming Text - Smooth Rendering
+   ============================================ */
+.streaming-text {
+  /* GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  will-change: contents;
+  /* Optimize text rendering */
+  text-rendering: optimizeSpeed;
+}
+
+/* Blinking cursor at end of streaming text */
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: #22C55E;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursorBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ============================================
+   Focus & Selection
+   ============================================ */
+*:focus-visible {
+  outline: 2px solid #22C55E;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+/* ============================================
+   Markdown Content Styles - Expert Level
+   ============================================ */
+.markdown-content {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--foreground-secondary);
+  letter-spacing: -0.01em;
+}
+
+.dark .markdown-content {
+  color: var(--foreground-secondary);
+}
+
+/* Paragraphs */
+.markdown-content p {
+  margin-bottom: 1em;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Headers */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  color: var(--foreground);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child {
+  margin-top: 0;
+}
+
+/* Lists */
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0.75em 0;
+}
+
+.markdown-content li {
+  margin: 0.4em 0;
+  color: var(--foreground-secondary);
+}
+
+.markdown-content li::marker {
+  color: var(--accent-green);
+}
+
+/* Inline code - refined styling */
+.markdown-content code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: rgba(0, 0, 0, 0.05);
+  color: #E06C75;
+  padding: 0.2em 0.45em;
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+.dark .markdown-content code:not(pre code) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #E5C07B;
+}
+
+/* Code blocks container */
+.markdown-content pre {
+  margin: 1.25em 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Blockquotes - refined */
+.markdown-content blockquote {
+  border-left: 3px solid var(--accent-green);
+  margin: 1em 0;
+  padding: 0.75em 0 0.75em 1.25em;
+  background: var(--background-secondary);
+  border-radius: 0 8px 8px 0;
+  color: var(--foreground-muted);
+}
+
+.dark .markdown-content blockquote {
+  background: var(--background-chat);
+  border-left-color: var(--accent-green);
+}
+
+/* Links */
+.markdown-content a {
+  color: var(--accent-green);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Bold - enhanced contrast */
+.markdown-content strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* Horizontal rule */
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 1.5em 0;
+}
+
+/* Tables - refined */
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25em 0;
+  font-size: 0.9em;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--border-light);
+  padding: 0.65em 1em;
+  text-align: left;
+}
+
+.markdown-content th {
+  background: var(--background-secondary);
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.dark .markdown-content th {
+  background: var(--background-chat);
+}
+
+/* ============================================
+   Code Block Syntax Highlighting
+   ============================================ */
+.code-block {
+  background: var(--background-code);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dark .code-block {
+  border-color: var(--border-light);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  background: var(--background-code-header);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.code-block-language {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: #9CA3AF;
+  text-transform: lowercase;
+}
+
+.code-block-content {
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #ABB2BF;
+  tab-size: 2;
+}
+
+/* Syntax highlighting classes */
+.syntax-keyword { color: var(--syntax-keyword); }
+.syntax-string { color: var(--syntax-string); }
+.syntax-number { color: var(--syntax-number); }
+.syntax-function { color: var(--syntax-function); }
+.syntax-comment { color: var(--syntax-comment); font-style: italic; }
+.syntax-variable { color: var(--syntax-variable); }
+.syntax-operator { color: var(--syntax-operator); }
+.syntax-class { color: var(--syntax-class); }
+.syntax-tag { color: var(--syntax-variable); }
+.syntax-attr { color: var(--syntax-number); }
+.syntax-punctuation { color: #ABB2BF; }
+
+/* ============================================
+   Form Elements
+   ============================================ */
+textarea::placeholder,
+input::placeholder {
+  color: #9CA3AF;
+}
+
+.dark textarea::placeholder,
+.dark input::placeholder {
+  color: #6B7280;
+}
+
+/* ============================================
+   Theme Transitions - Smooth
+   ============================================ */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disable transitions for streaming text (performance) */
+.streaming-text,
+.streaming-text * {
+  transition: none !important;
+}
+
+/* ============================================
+   Premium Hover Utilities
+   ============================================ */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Gradient text on hover */
+.hover-gradient-text {
+  transition: all 0.3s ease;
+}
+
+.hover-gradient-text:hover {
+  background: linear-gradient(135deg, #22C55E, #3B82F6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Premium glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dark .glass {
+  background: rgba(10, 10, 10, 0.8);
+}
+
+/* Gradient border effect */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #22C55E, #3B82F6);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* ============================================
+   Mobile
+   ============================================ */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  .markdown-content {
+    font-size: 14px;
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

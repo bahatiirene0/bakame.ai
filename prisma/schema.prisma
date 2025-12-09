@@ -1,0 +1,30 @@
+// Prisma schema for Bakame.ai
+// Database: SQLite for local development
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Chat conversation model
+model Chat {
+  id        String    @id @default(cuid())
+  title     String    @default("Ikiganiro gishya") // "New chat" in Kinyarwanda
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+// Individual message model
+model Message {
+  id        String   @id @default(cuid())
+  role      String   // 'user' | 'assistant' | 'system'
+  content   String
+  createdAt DateTime @default(now())
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId    String
+}

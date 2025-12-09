@@ -1,0 +1,194 @@
+/**
+ * ChatContainer Component - Premium Design
+ *
+ * Features:
+ * - Premium welcome screen with animations
+ * - Gradient hover effects on suggestion chips
+ * - Smooth scroll behavior
+ * - Glassmorphism elements
+ */
+
+'use client';
+
+import { useEffect, useRef, useMemo, memo, useCallback } from 'react';
+import { useChatStore } from '@/store/chatStore';
+import ChatMessage from './ChatMessage';
+import TypingIndicator from './TypingIndicator';
+
+export default function ChatContainer() {
+  // Use selective subscriptions - only subscribe to what we need
+  const sessions = useChatStore((state) => state.sessions);
+  const activeSessionId = useChatStore((state) => state.activeSessionId);
+  const isLoading = useChatStore((state) => state.isLoading);
+  const isStreaming = useChatStore((state) => state.isStreaming);
+
+  // Memoize the active session's messages to prevent recalculation
+  const messages = useMemo(() => {
+    const activeSession = sessions.find(s => s.id === activeSessionId);
+    return activeSession?.messages || [];
+  }, [sessions, activeSessionId]);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
+
+  // Scroll to bottom - only when message count changes or streaming starts
+  useEffect(() => {
+    const messageCount = messages.length;
+    const shouldScroll = messageCount !== lastMessageCountRef.current || isLoading;
+
+    if (shouldScroll) {
+      lastMessageCountRef.current = messageCount;
+      messagesEndRef.current?.scrollIntoView({ behavior: isStreaming ? 'instant' : 'smooth' });
+    }
+  }, [messages.length, isLoading, isStreaming]);
+
+  // Scroll during streaming - but throttled
+  useEffect(() => {
+    if (isStreaming) {
+      const interval = setInterval(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      }, 150); // Reduced frequency from 100ms to 150ms
+      return () => clearInterval(interval);
+    }
+  }, [isStreaming]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-y-auto px-4 pt-16 pb-32 scroll-smooth
+        bg-gradient-to-b from-white via-white to-gray-50/50
+        dark:from-[#0a0a0a] dark:via-[#0a0a0a] dark:to-[#111111]/50"
+    >
+      <div className="max-w-3xl mx-auto space-y-5 py-4">
+        {/* Welcome message when chat is empty */}
+        {messages.length === 0 && <WelcomeScreen />}
+
+        {/* Chat messages */}
+        {messages.map((message) => (
+          <ChatMessage key={message.id} message={message} />
+        ))}
+
+        {/* Typing indicator - show only when loading but not yet streaming */}
+        {isLoading && !isStreaming && <TypingIndicator />}
+
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} className="h-1" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Welcome Screen Component - Premium Design
+ * Shown when chat is empty with animated suggestions
+ */
+const WelcomeScreen = memo(function WelcomeScreen() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center animate-fadeIn">
+      {/* Animated Logo with Rabbit Emoji - Premium */}
+      <div className="relative mb-8 group cursor-default">
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-green-500 via-yellow-500 to-blue-500
+          flex items-center justify-center
+          shadow-2xl shadow-green-500/30
+          group-hover:shadow-green-500/50 group-hover:scale-105
+          animate-float transition-all duration-500">
+          <span className="text-4xl">🐰</span>
+        </div>
+        {/* Glow effect - more intense */}
+        <div className="absolute inset-0 w-20 h-20 rounded-3xl
+          bg-gradient-to-br from-green-500 via-yellow-500 to-blue-500
+          blur-2xl opacity-40 -z-10 animate-pulse" />
+        {/* Second glow layer */}
+        <div className="absolute -inset-4 w-28 h-28 rounded-full
+          bg-gradient-to-br from-green-500/20 via-transparent to-blue-500/20
+          blur-3xl opacity-50 -z-20" />
+      </div>
+
+      <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-3">
+        Murakaza neza kuri{' '}
+        <span className="bg-gradient-to-r from-green-500 via-yellow-500 to-blue-500
+          bg-clip-text text-transparent font-bold
+          hover:from-green-400 hover:via-yellow-400 hover:to-blue-400
+          transition-all duration-300 cursor-default">
+          Bakame
+        </span>
+      </h2>
+
+      <p className="text-gray-500 dark:text-gray-400 max-w-md mb-10 text-sm">
+        AI y&apos;Abanyarwanda - Umufasha wawe w&apos;ubwenge
+      </p>
+
+      {/* Suggestion chips - grid layout */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-lg">
+        {suggestions.map((suggestion, index) => (
+          <SuggestionChip
+            key={index}
+            text={suggestion.text}
+            icon={suggestion.icon}
+            delay={index * 80}
+          />
+        ))}
+      </div>
+    </div>
+  );
+});
+
+// Suggestion data - Kinyarwanda suggestions
+const suggestions = [
+  { text: 'Njye ndi nde?', icon: '🐰' },
+  { text: 'Mfashe kwandika code', icon: '💻' },
+  { text: 'Sobanura iby\'ubuzima', icon: '🏥' },
+  { text: 'Ibitekerezo by\'ubucuruzi', icon: '💼' },
+  { text: 'Mfashe kwiga', icon: '📚' },
+  { text: 'Andika inkuru', icon: '✨' },
+];
+
+// Suggestion chip component - Premium Design
+interface SuggestionChipProps {
+  text: string;
+  icon: string;
+  delay: number;
+}
+
+const SuggestionChip = memo(function SuggestionChip({ text, icon, delay }: SuggestionChipProps) {
+  const sendMessage = useChatStore((state) => state.sendMessage);
+  const isLoading = useChatStore((state) => state.isLoading);
+  const isStreaming = useChatStore((state) => state.isStreaming);
+  const disabled = isLoading || isStreaming;
+
+  const handleClick = useCallback(() => {
+    if (!disabled) {
+      sendMessage(text);
+    }
+  }, [disabled, sendMessage, text]);
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={disabled}
+      className="group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+        bg-white/80 dark:bg-white/5 backdrop-blur-sm
+        border border-gray-200/50 dark:border-white/10
+        text-gray-600 dark:text-gray-300 text-xs
+        hover:border-green-500/40 dark:hover:border-green-500/30
+        hover:shadow-lg hover:shadow-green-500/10
+        hover:scale-[1.02] active:scale-[0.98]
+        transition-all duration-300 animate-fadeIn overflow-hidden
+        disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {/* Hover gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 via-green-500/0 to-blue-500/0
+        group-hover:from-green-500/10 group-hover:via-green-500/5 group-hover:to-blue-500/10
+        transition-all duration-300" />
+
+      <span className="relative text-base group-hover:scale-110 transition-transform duration-200">
+        {icon}
+      </span>
+      <span className="relative group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-200">
+        {text}
+      </span>
+    </button>
+  );
+});
