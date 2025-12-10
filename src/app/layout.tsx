@@ -1,10 +1,12 @@
 /**
  * Root Layout for Bakame.ai
- * Sets up fonts, metadata, and theme provider
+ * Sets up fonts, metadata, theme provider, and authentication
  */
 
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/components';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Bakame.ai - Intelligent AI Assistant',
@@ -23,11 +25,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Get user on server side - this works because server can read cookies
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  console.log('[LAYOUT] Server-side user:', user?.email || 'guest');
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -35,7 +43,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen bg-[#F9FAFB] dark:bg-[#0A0A0A] text-gray-900 dark:text-gray-100">
-        {children}
+        <AuthProvider initialUser={user}>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

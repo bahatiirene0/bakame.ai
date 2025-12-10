@@ -6,14 +6,18 @@
  * - Gradient hover effects on suggestion chips
  * - Smooth scroll behavior
  * - Glassmorphism elements
+ * - Guest landing page hero
  */
 
 'use client';
 
 import { useEffect, useRef, useMemo, memo, useCallback } from 'react';
 import { useChatStore } from '@/store/chatStore';
+import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from '@/store/languageStore';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
+import ChatInput from './ChatInput';
 
 export default function ChatContainer() {
   // Use selective subscriptions - only subscribe to what we need
@@ -21,12 +25,17 @@ export default function ChatContainer() {
   const activeSessionId = useChatStore((state) => state.activeSessionId);
   const isLoading = useChatStore((state) => state.isLoading);
   const isStreaming = useChatStore((state) => state.isStreaming);
+  const { user } = useAuthStore();
+  const t = useTranslation();
 
   // Memoize the active session's messages to prevent recalculation
   const messages = useMemo(() => {
     const activeSession = sessions.find(s => s.id === activeSessionId);
     return activeSession?.messages || [];
   }, [sessions, activeSessionId]);
+
+  // Check if guest with no messages (show landing page)
+  const showGuestLanding = !user && messages.length === 0;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,6 +62,57 @@ export default function ChatContainer() {
     }
   }, [isStreaming]);
 
+  // ============================================
+  // GUEST LANDING PAGE - Clean design with large input
+  // ============================================
+  if (showGuestLanding) {
+    return (
+      <div
+        ref={containerRef}
+        className="flex-1 flex flex-col items-center justify-center px-4
+          bg-gradient-to-b from-white via-white to-gray-50/50
+          dark:from-[#0a0a0a] dark:via-[#0a0a0a] dark:to-[#111111]/50"
+      >
+        <div className="w-full max-w-2xl mx-auto text-center animate-fadeIn">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <div className="relative group cursor-default">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-green-500 via-yellow-500 to-blue-500
+                flex items-center justify-center
+                shadow-2xl shadow-green-500/30
+                group-hover:shadow-green-500/50 group-hover:scale-105
+                animate-float transition-all duration-500">
+                <span className="text-4xl">🐰</span>
+              </div>
+              <div className="absolute inset-0 w-20 h-20 rounded-3xl
+                bg-gradient-to-br from-green-500 via-yellow-500 to-blue-500
+                blur-2xl opacity-40 -z-10 animate-pulse" />
+            </div>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+            {t.welcome}{' '}
+            <span className="bg-gradient-to-r from-green-500 via-yellow-500 to-blue-500
+              bg-clip-text text-transparent">
+              Bakame
+            </span>
+          </h1>
+
+          <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">
+            {t.tagline}
+          </p>
+
+          {/* Large Input - full width of container */}
+          <ChatInput />
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // CHAT VIEW - Messages with scroll
+  // ============================================
   return (
     <div
       ref={containerRef}
@@ -60,9 +120,9 @@ export default function ChatContainer() {
         bg-gradient-to-b from-white via-white to-gray-50/50
         dark:from-[#0a0a0a] dark:via-[#0a0a0a] dark:to-[#111111]/50"
     >
-      <div className="max-w-3xl mx-auto space-y-5 py-4">
-        {/* Welcome message when chat is empty */}
-        {messages.length === 0 && <WelcomeScreen />}
+      <div className="max-w-2xl mx-auto space-y-5 py-4">
+        {/* Welcome message when chat is empty (logged-in user) */}
+        {messages.length === 0 && user && <WelcomeScreen />}
 
         {/* Chat messages */}
         {messages.map((message) => (
@@ -79,9 +139,10 @@ export default function ChatContainer() {
   );
 }
 
+
 /**
  * Welcome Screen Component - Premium Design
- * Shown when chat is empty with animated suggestions
+ * Shown when chat is empty for logged-in users
  */
 const WelcomeScreen = memo(function WelcomeScreen() {
   return (

@@ -2,6 +2,7 @@
  * Sidebar Component - Premium Design
  *
  * Features:
+ * - Chat history management
  * - Sleek narrow design with custom scrollbar
  * - Smooth hover animations with gradients
  * - Glass morphism effects
@@ -12,7 +13,19 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useChatStore } from '@/store/chatStore';
+import { useAuthStore } from '@/store/authStore';
 import { ChatSession } from '@/types';
+
+// Agent icons mapping - matches SpecialistAgentsMenu
+const AGENT_ICONS: Record<string, { icon: string; color: string }> = {
+  default: { icon: '🐰', color: '#10B981' },
+  'gov-services': { icon: '🏛️', color: '#3B82F6' },
+  'business-finance': { icon: '💼', color: '#F59E0B' },
+  'police-services': { icon: '👮', color: '#6366F1' },
+  'rra-tax': { icon: '📊', color: '#EF4444' },
+  'health-guide': { icon: '⚕️', color: '#EC4899' },
+  'education': { icon: '📚', color: '#8B5CF6' },
+};
 
 export default function Sidebar() {
   const {
@@ -26,6 +39,13 @@ export default function Sidebar() {
     setActiveSession,
     setSidebarOpen,
   } = useChatStore();
+
+  const { user } = useAuthStore();
+
+  // Don't render sidebar for guests (they only have one session)
+  if (!user) {
+    return null;
+  }
 
   return (
     <>
@@ -213,6 +233,9 @@ function SessionItem({
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Get agent info for this session
+  const agentInfo = AGENT_ICONS[session.agentId || 'default'] || AGENT_ICONS.default;
+
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -254,17 +277,20 @@ function SessionItem({
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       onClick={() => !disabled && !isEditing && onSelect()}
     >
-      {/* Chat icon */}
-      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0
-        transition-all duration-200
-        ${isActive
-          ? 'bg-gradient-to-br from-green-500 to-blue-500 text-white shadow-md shadow-green-500/20'
-          : 'bg-gray-200/70 dark:bg-white/10 text-gray-500 dark:text-gray-400 group-hover:bg-green-500/20 group-hover:text-green-600'
-        }`}>
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
+      {/* Agent icon */}
+      <div
+        className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0
+          transition-all duration-200 text-sm
+          ${isActive
+            ? 'shadow-md'
+            : 'opacity-80 group-hover:opacity-100'
+          }`}
+        style={{
+          backgroundColor: isActive ? `${agentInfo.color}20` : `${agentInfo.color}10`,
+          boxShadow: isActive ? `0 4px 12px ${agentInfo.color}30` : 'none',
+        }}
+      >
+        {agentInfo.icon}
       </div>
 
       {/* Title */}

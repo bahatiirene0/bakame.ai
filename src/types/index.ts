@@ -32,6 +32,7 @@ export interface ChatSession {
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
+  agentId?: string; // Which specialist agent was used (if any)
 }
 
 // Serializable version for localStorage
@@ -47,6 +48,7 @@ export interface ChatSessionSerialized {
   }>;
   createdAt: string;
   updatedAt: string;
+  agentId?: string;
 }
 
 // ============================================
@@ -73,8 +75,9 @@ export interface ChatState {
 // Actions for the chat store
 export interface ChatActions {
   // Session management
-  createSession: (title?: string) => string;
+  createSession: (title?: string, agentId?: string) => string;
   deleteSession: (sessionId: string) => void;
+  clearAllSessions: () => void;
   renameSession: (sessionId: string, newTitle: string) => void;
   setActiveSession: (sessionId: string) => void;
 

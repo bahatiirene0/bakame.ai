@@ -14,3 +14,11 @@ export { default as ThemeProvider } from './ThemeProvider';
 export { default as MarkdownRenderer } from './MarkdownRenderer';
 export { default as Sidebar } from './Sidebar';
 export { default as StreamingText } from './StreamingText';
+
+// Auth components
+export { default as AuthProvider } from './AuthProvider';
+export { default as UserMenu } from './UserMenu';
+
+// Agent components
+export { default as SpecialistAgentsMenu } from './SpecialistAgentsMenu';
+

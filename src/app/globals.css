@@ -260,6 +260,13 @@ body {
   outline-offset: 2px;
 }
 
+/* Remove focus outline from textareas (they have custom styling) */
+textarea:focus-visible,
+textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 ::selection {
   background: rgba(34, 197, 94, 0.2);
 }
