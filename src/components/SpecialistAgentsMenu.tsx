@@ -203,7 +203,7 @@ export default function SpecialistAgentsMenu() {
         </svg>
 
         <span className={`text-sm font-medium hidden sm:inline ${isOpen ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
-          Agents
+          Bakame Agents
         </span>
 
         {/* Current agent indicator */}
@@ -216,7 +216,7 @@ export default function SpecialistAgentsMenu() {
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 z-50 flex gap-2 animate-fadeIn">
           {/* Agent List */}
-          <div className="w-64 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl
+          <div className="w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl
             border border-gray-200/50 dark:border-white/10 overflow-hidden">
 
             {/* Header */}
@@ -231,7 +231,7 @@ export default function SpecialistAgentsMenu() {
             </div>
 
             {/* Agent List */}
-            <div className="py-2 max-h-[60vh] overflow-y-auto">
+            <div className="py-2 max-h-[40vh] sm:max-h-[60vh] overflow-y-auto">
               {AGENTS.map((agent) => (
                 <button
                   key={agent.id}

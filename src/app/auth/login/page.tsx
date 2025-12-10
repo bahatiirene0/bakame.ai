@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useLanguageStore, useTranslation } from '@/store/languageStore';
@@ -73,6 +73,9 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
+  // Modal ref for focus trap
+  const forgotPasswordModalRef = useRef<HTMLDivElement>(null);
+
   // Get mode from URL or default to signin
   const initialMode = (searchParams.get('mode') as AuthMode) || 'signin';
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -109,6 +112,57 @@ export default function LoginPage() {
       setMode(urlMode);
     }
   }, [searchParams]);
+
+  // Handle Escape key and focus trap for forgot password modal
+  useEffect(() => {
+    if (!showForgotPassword) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowForgotPassword(false);
+        setResetEmail('');
+        setResetEmailSent(false);
+        setError(null);
+      }
+    };
+
+    // Focus trap: trap Tab key within modal
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !forgotPasswordModalRef.current) return;
+
+      const focusableElements = forgotPasswordModalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey) {
+        // Shift + Tab: go to last element if on first
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab: go to first element if on last
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleTab);
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleTab);
+      document.body.style.overflow = '';
+    };
+  }, [showForgotPassword]);
 
   const handleGoogleLogin = async () => {
     setError(null);
@@ -483,15 +537,17 @@ export default function LoginPage() {
 
                 {useEmailForSignIn ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="signin-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Email
                     </label>
                     <input
+                      id="signin-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={t.emailPlaceholder}
                       disabled={isSubmitting}
+                      autoComplete="email"
                       className="w-full px-4 py-3 rounded-xl
                         bg-gray-50 dark:bg-white/5
                         border border-gray-200 dark:border-white/10
@@ -506,7 +562,7 @@ export default function LoginPage() {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="signin-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t.phone}
                     </label>
                     <div className="flex gap-2">
@@ -562,11 +618,13 @@ export default function LoginPage() {
 
                       {/* Phone Input */}
                       <input
+                        id="signin-phone"
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                         placeholder={t.phonePlaceholder}
                         disabled={isSubmitting}
+                        autoComplete="tel"
                         className="flex-1 px-4 py-3 rounded-xl
                           bg-gray-50 dark:bg-white/5
                           border border-gray-200 dark:border-white/10
@@ -583,16 +641,18 @@ export default function LoginPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="signin-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t.password}
                   </label>
                   <div className="relative">
                     <input
+                      id="signin-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       disabled={isSubmitting}
+                      autoComplete="current-password"
                       className="w-full px-4 py-3 pr-12 rounded-xl
                         bg-gray-50 dark:bg-white/5
                         border border-gray-200 dark:border-white/10
@@ -666,15 +726,17 @@ export default function LoginPage() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="signup-fullname" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t.fullName}
                   </label>
                   <input
+                    id="signup-fullname"
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder={t.fullNamePlaceholder}
                     disabled={isSubmitting}
+                    autoComplete="name"
                     className="w-full px-4 py-3 rounded-xl
                       bg-gray-50 dark:bg-white/5
                       border border-gray-200 dark:border-white/10
@@ -690,7 +752,7 @@ export default function LoginPage() {
 
                 {/* Phone Number - Required */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="signup-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t.phone} <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-2">
@@ -746,11 +808,13 @@ export default function LoginPage() {
 
                     {/* Phone Input */}
                     <input
+                      id="signup-phone"
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                       placeholder={t.phonePlaceholder}
                       disabled={isSubmitting}
+                      autoComplete="tel"
                       className="flex-1 px-4 py-3 rounded-xl
                         bg-gray-50 dark:bg-white/5
                         border border-gray-200 dark:border-white/10
@@ -767,15 +831,17 @@ export default function LoginPage() {
 
                 {/* Email - Optional */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t.email}
                   </label>
                   <input
+                    id="signup-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t.emailPlaceholder}
                     disabled={isSubmitting}
+                    autoComplete="email"
                     className="w-full px-4 py-3 rounded-xl
                       bg-gray-50 dark:bg-white/5
                       border border-gray-200 dark:border-white/10
@@ -791,11 +857,12 @@ export default function LoginPage() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="signup-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t.password} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="signup-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -803,6 +870,7 @@ export default function LoginPage() {
                       onBlur={() => setTimeout(() => setShowPasswordHints(false), 200)}
                       placeholder={t.passwordPlaceholder}
                       disabled={isSubmitting}
+                      autoComplete="new-password"
                       className={`w-full px-4 py-3 pr-12 rounded-xl
                         bg-gray-50 dark:bg-white/5
                         border text-gray-900 dark:text-white
@@ -895,15 +963,17 @@ export default function LoginPage() {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="signup-confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t.confirmPassword} <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="signup-confirm-password"
                     type={showPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={t.confirmPasswordPlaceholder}
                     disabled={isSubmitting}
+                    autoComplete="new-password"
                     className={`w-full px-4 py-3 rounded-xl
                       bg-gray-50 dark:bg-white/5
                       border text-gray-900 dark:text-white
@@ -1088,10 +1158,28 @@ export default function LoginPage() {
 
       {/* Forgot Password Modal */}
       {showForgotPassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-white dark:bg-[#1a1a1a] rounded-3xl
-            border border-gray-200 dark:border-white/10
-            shadow-2xl overflow-hidden animate-fadeIn">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="forgot-password-title"
+          onClick={(e) => {
+            // Close on backdrop click (but not on modal content click)
+            if (e.target === e.currentTarget) {
+              setShowForgotPassword(false);
+              setResetEmail('');
+              setResetEmailSent(false);
+              setError(null);
+            }
+          }}
+        >
+          <div
+            ref={forgotPasswordModalRef}
+            className="w-full max-w-md bg-white dark:bg-[#1a1a1a] rounded-3xl
+              border border-gray-200 dark:border-white/10
+              shadow-2xl overflow-hidden animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
 
             {/* Header */}
             <div className="p-6 border-b border-gray-200 dark:border-white/10">
@@ -1099,12 +1187,12 @@ export default function LoginPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-blue-500
                     flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 id="forgot-password-title" className="text-lg font-semibold text-gray-900 dark:text-white">
                       {language === 'rw' ? "Wibagiwe ijambo ry'ibanga?" : 'Forgot password?'}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1174,16 +1262,18 @@ export default function LoginPage() {
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Email
                     </label>
                     <input
+                      id="reset-email"
                       type="email"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       placeholder={t.emailPlaceholder}
                       disabled={isSubmitting}
                       autoFocus
+                      autoComplete="email"
                       className="w-full px-4 py-3 rounded-xl
                         bg-gray-50 dark:bg-white/5
                         border border-gray-200 dark:border-white/10

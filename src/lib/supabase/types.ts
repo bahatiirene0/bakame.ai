@@ -125,6 +125,7 @@ export interface Database {
           id: string;
           user_id: string;
           agent_id: string | null;
+          agent_slug: string;
           title: string;
           metadata: Json | null;
           is_archived: boolean;
@@ -135,6 +136,7 @@ export interface Database {
           id?: string;
           user_id: string;
           agent_id?: string | null;
+          agent_slug?: string;
           title?: string;
           metadata?: Json | null;
           is_archived?: boolean;
@@ -143,6 +145,7 @@ export interface Database {
         };
         Update: {
           agent_id?: string | null;
+          agent_slug?: string;
           title?: string;
           metadata?: Json | null;
           is_archived?: boolean;

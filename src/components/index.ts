@@ -19,6 +19,9 @@ export { default as StreamingText } from './StreamingText';
 export { default as AuthProvider } from './AuthProvider';
 export { default as UserMenu } from './UserMenu';
 
-// Agent components
-export { default as SpecialistAgentsMenu } from './SpecialistAgentsMenu';
+// NOTE: SpecialistAgentsMenu removed - n8n workflows now handle domain expertise
+// export { default as SpecialistAgentsMenu } from './SpecialistAgentsMenu';
+
+// Utility components
+export { default as ErrorBoundary } from './ErrorBoundary';
 

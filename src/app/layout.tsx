@@ -18,7 +18,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5, // Allow user zoom for accessibility
+  userScalable: true,
+  viewportFit: 'cover', // Support for notched devices (iPhone X+, etc.)
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#F9FAFB' },
     { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },

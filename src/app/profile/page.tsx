@@ -18,6 +18,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { useChatStore } from '@/store/chatStore';
+import { useUserSettingsStore } from '@/store/userSettingsStore';
+import { DEFAULT_AI_SETTINGS, type UserAISettings } from '@/lib/prompts';
 
 type TabType = 'profile' | 'preferences' | 'data';
 
@@ -27,11 +29,20 @@ export default function ProfilePage() {
   const { theme, toggleTheme } = useThemeStore();
   const { language, toggleLanguage } = useLanguageStore();
   const { sessions, clearAllSessions } = useChatStore();
+  const {
+    settings: aiSettings,
+    isLoading: isAISettingsLoading,
+    isSaving: isAISettingsSaving,
+    loadSettings: loadAISettings,
+    updateSettings: updateAISettings,
+    resetSettings: resetAISettings,
+  } = useUserSettingsStore();
 
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [editName, setEditName] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -50,6 +61,13 @@ export default function ProfilePage() {
       setEditName(user.user_metadata.full_name);
     }
   }, [profile, user]);
+
+  // Load AI settings when user is available
+  useEffect(() => {
+    if (user?.id) {
+      loadAISettings(user.id);
+    }
+  }, [user?.id, loadAISettings]);
 
   // Loading state
   if (!isInitialized || !user) {
@@ -89,7 +107,12 @@ export default function ProfilePage() {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
+    setShowSignOutConfirm(true);
+  };
+
+  const confirmSignOut = async () => {
+    setShowSignOutConfirm(false);
     await signOut();
     router.push('/');
   };
@@ -252,8 +275,8 @@ export default function ProfilePage() {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium
                 whitespace-nowrap transition-all duration-200
                 ${activeTab === tab.id
-                  ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-                  : 'bg-white/80 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+                  ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 scale-[1.02]'
+                  : 'bg-white/80 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 border border-transparent hover:border-gray-200/50 dark:hover:border-white/10'
                 }`}
             >
               <span>{tab.icon}</span>
@@ -398,6 +421,176 @@ export default function ProfilePage() {
                   {language === 'rw' ? 'EN' : 'RW'}
                 </button>
               </div>
+
+              {/* AI Settings Section Header */}
+              <div className="p-4 bg-gradient-to-r from-green-500/5 to-blue-500/5">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🤖</span>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {language === 'rw' ? 'Imiterere ya AI' : 'AI Personality'}
+                  </h3>
+                  {isAISettingsSaving && (
+                    <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin ml-auto" />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {language === 'rw'
+                    ? 'Hindura uburyo Bakame aganira nawe'
+                    : 'Customize how Bakame responds to you'}
+                </p>
+              </div>
+
+              {/* Response Style */}
+              <div className="p-4">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                  {language === 'rw' ? 'Uburyo bwo gusubiza' : 'Response Style'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'concise', labelEn: 'Concise', labelRw: 'Ngufi' },
+                    { value: 'balanced', labelEn: 'Balanced', labelRw: 'Hagati' },
+                    { value: 'detailed', labelEn: 'Detailed', labelRw: 'Birambuye' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => updateAISettings({ responseStyle: option.value as UserAISettings['responseStyle'] })}
+                      disabled={isAISettingsSaving}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
+                        ${aiSettings.responseStyle === option.value
+                          ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                          : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20'
+                        }`}
+                    >
+                      {language === 'rw' ? option.labelRw : option.labelEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tone */}
+              <div className="p-4">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                  {language === 'rw' ? 'Ijwi' : 'Tone'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'professional', labelEn: 'Professional', labelRw: 'Umwuga' },
+                    { value: 'friendly', labelEn: 'Friendly', labelRw: 'Inshuti' },
+                    { value: 'casual', labelEn: 'Casual', labelRw: 'Byoroshye' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => updateAISettings({ tone: option.value as UserAISettings['tone'] })}
+                      disabled={isAISettingsSaving}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
+                        ${aiSettings.tone === option.value
+                          ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                          : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20'
+                        }`}
+                    >
+                      {language === 'rw' ? option.labelRw : option.labelEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Language Preference */}
+              <div className="p-4">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                  {language === 'rw' ? 'Ururimi rwa AI' : 'AI Language'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'kinyarwanda', labelEn: 'Kinyarwanda', labelRw: 'Ikinyarwanda' },
+                    { value: 'english', labelEn: 'English', labelRw: 'Icyongereza' },
+                    { value: 'mixed', labelEn: 'Mixed', labelRw: 'Byombi' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => updateAISettings({ languagePreference: option.value as UserAISettings['languagePreference'] })}
+                      disabled={isAISettingsSaving}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
+                        ${aiSettings.languagePreference === option.value
+                          ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                          : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20'
+                        }`}
+                    >
+                      {language === 'rw' ? option.labelRw : option.labelEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* About Me */}
+              <div className="p-4">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  {language === 'rw' ? 'Ibyanjye' : 'About Me'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  {language === 'rw'
+                    ? 'Bakame azakoresha ibi kugira ngo agusubize neza'
+                    : 'Bakame will use this to personalize responses'}
+                </p>
+                <textarea
+                  value={aiSettings.aboutMe || ''}
+                  onChange={(e) => updateAISettings({ aboutMe: e.target.value })}
+                  placeholder={language === 'rw'
+                    ? 'Urugero: Ndi umunyeshuri w\'ikoranabuhanga...'
+                    : 'Example: I\'m a tech student from Kigali...'}
+                  className="w-full px-4 py-3 rounded-xl text-sm
+                    bg-gray-100 dark:bg-white/10
+                    border border-gray-200 dark:border-white/10
+                    text-gray-900 dark:text-white
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    focus:outline-none focus:ring-2 focus:ring-green-500/50
+                    resize-none"
+                  rows={3}
+                  maxLength={200}
+                />
+                <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
+                  {(aiSettings.aboutMe?.length || 0)}/200
+                </p>
+              </div>
+
+              {/* Profession */}
+              <div className="p-4">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  {language === 'rw' ? 'Umwuga' : 'Profession'}
+                </p>
+                <input
+                  type="text"
+                  value={aiSettings.profession || ''}
+                  onChange={(e) => updateAISettings({ profession: e.target.value })}
+                  placeholder={language === 'rw' ? 'Urugero: Umunyeshuri, Umufundi, ...' : 'e.g. Student, Developer, ...'}
+                  className="w-full px-4 py-3 rounded-xl text-sm
+                    bg-gray-100 dark:bg-white/10
+                    border border-gray-200 dark:border-white/10
+                    text-gray-900 dark:text-white
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                  maxLength={50}
+                />
+              </div>
+
+              {/* Reset AI Settings */}
+              <div className="p-4">
+                <button
+                  onClick={resetAISettings}
+                  disabled={isAISettingsSaving}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+                    bg-gray-100 dark:bg-white/5
+                    text-gray-600 dark:text-gray-400
+                    hover:bg-gray-200 dark:hover:bg-white/10
+                    disabled:opacity-50
+                    transition-colors duration-200"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {language === 'rw' ? 'Subiza ibisanzwe' : 'Reset to defaults'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -508,6 +701,54 @@ export default function ProfilePage() {
                     transition-colors duration-200"
                 >
                   {language === 'rw' ? 'Yego, siba' : 'Yes, delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-3xl
+            border border-gray-200 dark:border-white/10
+            shadow-2xl p-6 animate-fadeIn">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-500/10
+                flex items-center justify-center">
+                <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {language === 'rw' ? 'Uremeza gusohoka?' : 'Sign out?'}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                {language === 'rw'
+                  ? 'Uzasohoka kuri konti yawe. Ibiganiro byawe bizabikwa.'
+                  : 'You will be signed out of your account. Your chats will be saved.'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSignOutConfirm(false)}
+                  className="flex-1 px-4 py-3 rounded-xl
+                    bg-gray-100 dark:bg-white/10
+                    text-gray-700 dark:text-gray-200 font-medium
+                    hover:bg-gray-200 dark:hover:bg-white/20
+                    transition-colors duration-200"
+                >
+                  {language === 'rw' ? 'Bireke' : 'Cancel'}
+                </button>
+                <button
+                  onClick={confirmSignOut}
+                  className="flex-1 px-4 py-3 rounded-xl
+                    bg-orange-500 text-white font-medium
+                    hover:bg-orange-600
+                    transition-colors duration-200"
+                >
+                  {language === 'rw' ? 'Yego, sohoka' : 'Yes, sign out'}
                 </button>
               </div>
             </div>

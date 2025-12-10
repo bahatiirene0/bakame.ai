@@ -16,6 +16,59 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================
+   Safe Area Insets for Notched Devices
+   ============================================ */
+:root {
+  --safe-area-inset-top: 0px;
+  --safe-area-inset-right: 0px;
+  --safe-area-inset-bottom: 0px;
+  --safe-area-inset-left: 0px;
+}
+
+@supports (padding: max(0px)) {
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  }
+}
+
+/* ============================================
+   Touch Optimization - Eliminate 300ms tap delay
+   ============================================ */
+html {
+  touch-action: manipulation;
+}
+
+/* ============================================
+   Dynamic Viewport Height - Fix for mobile address bar
+   ============================================ */
+/* Use dvh (dynamic viewport height) which adjusts for mobile address bar */
+/* Fallback to vh for browsers that don't support dvh */
+html, body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* CSS variable for JavaScript access */
+:root {
+  --app-height: 100vh;
+  --app-height: 100dvh;
+}
+
+/* Apply to all interactive elements for consistent touch behavior */
+button,
+a,
+input,
+textarea,
+select,
+[role="button"],
+[tabindex]:not([tabindex="-1"]) {
+  touch-action: manipulation;
+}
+
+/* ============================================
    CSS Variables - Enhanced Color Palette
    ============================================ */
 :root {
@@ -74,6 +127,8 @@
   --color-foreground: var(--foreground);
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  /* Custom xs breakpoint for very small phones */
+  --breakpoint-xs: 375px;
 }
 
 /* ============================================
@@ -106,9 +161,49 @@ body {
 }
 
 /* ============================================
+   Accessibility - Focus States
+   ============================================ */
+/* Global focus-visible styles for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #22C55E;
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline when using mouse */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip link for screen readers */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #22C55E;
+  color: white;
+  padding: 8px 16px;
+  z-index: 9999;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ============================================
    Scrollbar
    ============================================ */
-/* Main scrollbar */
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+.dark * {
+  scrollbar-color: rgba(75, 85, 99, 0.3) transparent;
+}
+
+/* Main scrollbar - Chromium/Safari */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -223,6 +318,27 @@ body {
 
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
+}
+
+/* Skeleton loading states */
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(156, 163, 175, 0.1) 0%,
+    rgba(156, 163, 175, 0.2) 50%,
+    rgba(156, 163, 175, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 0.5rem;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg,
+    rgba(75, 85, 99, 0.2) 0%,
+    rgba(75, 85, 99, 0.3) 50%,
+    rgba(75, 85, 99, 0.2) 100%
+  );
+  background-size: 200% 100%;
 }
 
 /* ============================================
@@ -531,6 +647,16 @@ input::placeholder {
   background-clip: text;
 }
 
+/* Safari gradient text fix - ensures bg-clip-text works properly */
+.text-transparent {
+  -webkit-text-fill-color: transparent;
+}
+
+/* Safari bg-clip-text enhancement */
+.bg-clip-text {
+  -webkit-background-clip: text;
+}
+
 /* Premium glass effect */
 .glass {
   background: rgba(255, 255, 255, 0.8);
@@ -554,10 +680,14 @@ input::placeholder {
   padding: 1px;
   border-radius: inherit;
   background: linear-gradient(135deg, #22C55E, #3B82F6);
+  /* Mask for gradient border effect - cross-browser */
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  /* WebKit/Blink uses 'xor', Firefox/standard uses 'exclude' */
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+  /* Firefox fallback */
+  -moz-mask-composite: exclude;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -567,8 +697,21 @@ input::placeholder {
 }
 
 /* ============================================
-   Mobile
+   Mobile Responsiveness
    ============================================ */
+
+/* Extra small devices (phones, 320px and up) */
+@media (max-width: 375px) {
+  body {
+    font-size: 13px;
+  }
+
+  .markdown-content {
+    font-size: 13px;
+  }
+}
+
+/* Small devices (phones, 640px and down) */
 @media (max-width: 640px) {
   body {
     font-size: 14px;
@@ -577,16 +720,92 @@ input::placeholder {
   .markdown-content {
     font-size: 14px;
   }
+
+  /* Ensure minimum touch target sizes */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exception for inline elements */
+  .inline-touch-target {
+    min-height: auto;
+    min-width: auto;
+  }
+}
+
+/* Touch-friendly scrollbars on mobile */
+@media (pointer: coarse) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* Better tap highlighting */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: rgba(34, 197, 94, 0.2);
+  }
+}
+
+/* Safe area utilities */
+.safe-top {
+  padding-top: var(--safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: var(--safe-area-inset-bottom);
+}
+
+.safe-left {
+  padding-left: var(--safe-area-inset-left);
+}
+
+.safe-right {
+  padding-right: var(--safe-area-inset-right);
+}
+
+.safe-all {
+  padding-top: var(--safe-area-inset-top);
+  padding-right: var(--safe-area-inset-right);
+  padding-bottom: var(--safe-area-inset-bottom);
+  padding-left: var(--safe-area-inset-left);
+}
+
+/* Fixed bottom elements need safe area */
+.fixed-bottom-safe {
+  padding-bottom: max(1.25rem, var(--safe-area-inset-bottom));
+}
+
+/* Fixed top elements need safe area */
+.fixed-top-safe {
+  padding-top: max(0.75rem, var(--safe-area-inset-top));
 }
 
 /* ============================================
-   Reduced Motion
+   Reduced Motion - Accessibility
    ============================================ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable smooth scrolling */
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   Landscape Mode Adjustments
+   ============================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .chat-input-container {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 }

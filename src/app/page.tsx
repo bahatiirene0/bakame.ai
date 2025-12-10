@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Header, ChatContainer, ChatInput, ThemeProvider, Sidebar } from '@/components';
+import { Header, ChatContainer, ChatInput, ThemeProvider, Sidebar, ErrorBoundary } from '@/components';
 import { useChatStore } from '@/store/chatStore';
 import { useAuthStore } from '@/store/authStore';
 import { useLanguageStore } from '@/store/languageStore';
@@ -91,8 +91,10 @@ export default function Home() {
             {/* Header with logo and theme toggle */}
             <Header />
 
-            {/* Main chat container (includes hero + input for guest landing) */}
-            <ChatContainer />
+            {/* Main chat container with error boundary */}
+            <ErrorBoundary>
+              <ChatContainer />
+            </ErrorBoundary>
 
             {/* Chat input - only show fixed input for logged-in users OR guests who started chatting */}
             {(user || guestHasMessages) && <ChatInput />}

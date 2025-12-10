@@ -8,9 +8,12 @@
  */
 
 import { create } from 'zustand';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, Subscription } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase';
 import type { User as DbUser, UserUpdate } from '@/lib/supabase/types';
+
+// Store auth subscription reference to prevent memory leaks
+let authSubscription: Subscription | null = null;
 
 interface SignUpData {
   email?: string;
@@ -74,6 +77,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     console.log('[AUTH STORE] Starting initialization...');
 
+    // Clean up any existing subscription to prevent memory leaks (important for HMR)
+    if (authSubscription) {
+      console.log('[AUTH STORE] Cleaning up existing auth subscription');
+      authSubscription.unsubscribe();
+      authSubscription = null;
+    }
+
     // Helper function to fetch profile and set state
     const updateAuthState = async (session: Session | null, source: string) => {
       console.log(`[AUTH STORE] updateAuthState called from ${source}, session:`, !!session, 'user:', session?.user?.email || 'none');
@@ -113,13 +123,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     };
 
-    // Listen for auth state changes
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[AUTH STORE] onAuthStateChange event:', event, 'user:', session?.user?.email || 'none');
+    // Listen for auth state changes and store subscription for cleanup
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[AUTH STORE] onAuthStateChange event:', event);
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      // Only handle meaningful state changes
+      if (event === 'SIGNED_IN') {
+        // User just signed in
         await updateAuthState(session, `onAuthStateChange:${event}`);
       } else if (event === 'SIGNED_OUT') {
+        // User signed out
         console.log('[AUTH STORE] User signed out');
         set({
           user: null,
@@ -128,8 +141,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
           isInitialized: true,
         });
+      } else if (event === 'USER_UPDATED') {
+        // User profile updated
+        await updateAuthState(session, `onAuthStateChange:${event}`);
       }
+      // TOKEN_REFRESHED is ignored - it doesn't change user state
+      // and can cause unnecessary re-renders and session reloads
     });
+
+    // Store subscription reference for cleanup
+    authSubscription = subscription;
 
     // Get current session on page load
     console.log('[AUTH STORE] Calling getSession()...');

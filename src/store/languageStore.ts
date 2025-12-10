@@ -56,6 +56,13 @@ export const translations = {
     emailExists: 'Iyi email isanzwe iyanditse.',
     phoneExists: 'Iyi telefoni isanzwe iyanditse.',
     phoneRequired: 'Telefoni irasabwa.',
+    // Suggestion chips
+    suggestion1: 'Njye ndi nde?',
+    suggestion2: 'Mfashe kwandika code',
+    suggestion3: "Sobanura iby'ubuzima",
+    suggestion4: "Ibitekerezo by'ubucuruzi",
+    suggestion5: 'Mfashe kwiga',
+    suggestion6: 'Andika inkuru',
   },
   en: {
     welcome: 'Welcome to',
@@ -91,6 +98,13 @@ export const translations = {
     emailExists: 'This email is already registered.',
     phoneExists: 'This phone is already registered.',
     phoneRequired: 'Phone number is required.',
+    // Suggestion chips
+    suggestion1: 'Who are you?',
+    suggestion2: 'Help me write code',
+    suggestion3: 'Explain health topics',
+    suggestion4: 'Business ideas',
+    suggestion5: 'Help me study',
+    suggestion6: 'Write a story',
   },
 };
 

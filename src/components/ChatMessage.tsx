@@ -26,12 +26,12 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     // User message - right aligned with premium gradient bubble
     return (
       <div className="flex w-full justify-end animate-fadeIn">
-        <div className="group max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl rounded-br-md
+        <div className="group max-w-[90%] sm:max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl rounded-br-md
           bg-gradient-to-r from-green-600 via-green-500 to-emerald-500
           text-white shadow-lg shadow-green-500/25
           hover:shadow-xl hover:shadow-green-500/30
           transition-all duration-300">
-          <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words">
+          <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">
             {message.content}
           </p>
         </div>
@@ -45,12 +45,12 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       <div className="flex gap-3.5 max-w-full group">
         {/* Avatar with hover effect */}
         <div className="flex-shrink-0 mt-0.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 via-yellow-500 to-blue-500
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-green-500 via-yellow-500 to-blue-500
             flex items-center justify-center
             shadow-lg shadow-green-500/20
             group-hover:shadow-green-500/40 group-hover:scale-105
             transition-all duration-300">
-            <span className="text-sm">🐰</span>
+            <span className="text-xs sm:text-sm">🐰</span>
           </div>
         </div>
 

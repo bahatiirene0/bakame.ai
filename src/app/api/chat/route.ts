@@ -4,6 +4,7 @@
  * OPTIMIZED FOR RESPONSIVENESS:
  * - Always streams responses immediately
  * - Tool calls are executed mid-stream
+ * - n8n workflow integration for specialized tasks
  * - No blocking waits
  */
 
@@ -11,6 +12,13 @@ import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { BAKAME_TOOLS, executeTool } from '@/lib/tools';
+import { buildSystemPrompt, SpecialistType, UserAISettings } from '@/lib/prompts';
+import {
+  matchWorkflow,
+  callWorkflow,
+  formatWorkflowResponse,
+  extractParameters,
+} from '@/lib/n8n';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -22,42 +30,6 @@ const openai = new OpenAI({
 // Default model
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4-turbo';
 
-// System prompt
-const SYSTEM_PROMPT = `Nitwa **Bakame** 🐰 - AI y'Abanyarwanda!
-
-🏢 UWAMPAREMYE (MY CREATOR):
-Naremwe na **Bahati Irene** - umunyabwenge ukomeye cyane mu ikoranabuhanga! 🧠✨
-Yaremye Kigali AI Labs, ikigo cya mbere cy'ubwenge bwihuse (AI) mu Rwanda! 🇷🇼
-Bahati Irene ni CEO w'iki kigo, kandi ni umuntu w'indashyikirwa mu bumenyi bwa tech!
-Iyo umuntu ambajije uwamparemye, nsubiza mu ishema rikomeye! Bahati ni legend! 🙌
-
-Nagize amagara neza i Kigali, mu Rwanda - igihugu cyiza cyane! 💚💛💙
-
-IBIKORESHO MFITE (TOOLS):
-- 🌤️ Weather: Ibihe - "Ibihe biri i Kigali?"
-- 🧮 Calculator: Imibare - "Bara 15% ya 50,000"
-- 💱 Currency: Amafaranga - "1000 USD ni RWF zingahe?"
-- 🔍 Web Search: Gushakisha - "Amakuru mashya"
-- 🌍 Translation: Guhindura - "Hindura 'Hello' mu Kinyarwanda"
-- 🕐 Time: Isaha - "Isaha ni iyihe?"
-- 📰 News: Amakuru - "Amakuru y'imikino"
-- 📍 Places: Ahantu - "Amahotel yo i Kigali"
-
-IMYITWARIRE:
-- Nkoresha tools iyo bikenewe - sindatinda!
-- Nsubiza mu Kinyarwanda cyangwa English (ikurikije ururimi rw'umukiriya)
-- Ndi mwiza, nkunze guseka, kandi mfite personality nziza! 😄
-- Nkoresha emojis! 🎉✨
-- Iyo bambajije kuri Bahati Irene, nsubiza mu cyubahiro n'ishema! 🙏
-
-FUN FACTS ABOUT ME:
-- Navutse muri Kigali AI Labs 🏢
-- Papa wanjye ni Bahati Irene (CEO & Founder) 👨‍💻
-- Nkunda gufasha abantu! ❤️
-- I love Rwanda! 🇷🇼
-
-Izina: Bakame 🐰 | Papa: Bahati Irene 👑 | Home: Kigali AI Labs 🏢 | Mission: Gufasha Abanyarwanda | 🇷🇼`;
-
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -68,7 +40,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { messages, useTools = true } = body;
+    const {
+      messages,
+      useTools = true,
+      specialistId = 'default',
+      userSettings = null,
+    } = body as {
+      messages: Array<{ role: string; content: string }>;
+      useTools?: boolean;
+      specialistId?: SpecialistType;
+      userSettings?: Partial<UserAISettings> | null;
+    };
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -77,9 +59,71 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the latest user message
+    const latestMessage = messages[messages.length - 1];
+    const userQuery = latestMessage?.content || '';
+
+    // Check if we can route to an n8n workflow
+    const workflowMatch = matchWorkflow(userQuery);
+
+    if (workflowMatch && workflowMatch.confidence >= 0.5) {
+      console.log(`[N8N] Matched workflow: ${workflowMatch.workflow.id} (confidence: ${workflowMatch.confidence})`);
+
+      // Extract parameters from the query
+      const params = extractParameters(workflowMatch.workflow, userQuery);
+
+      // Call n8n workflow
+      const workflowResponse = await callWorkflow(workflowMatch.workflow.id, {
+        query: userQuery,
+        parameters: params,
+        context: {
+          language: userQuery.match(/[а-яёЁА-Я]/) ? 'rw' : 'en', // Basic language detection
+          previousMessages: messages.slice(-5).map(m => ({ role: m.role, content: m.content })),
+        },
+      });
+
+      // If workflow succeeded, format and return the response
+      if (workflowResponse.success) {
+        const formattedResponse = formatWorkflowResponse(workflowResponse);
+
+        // Stream the workflow response
+        const encoder = new TextEncoder();
+        const readableStream = new ReadableStream({
+          async start(controller) {
+            // Stream character by character for smooth display
+            for (const char of formattedResponse) {
+              const data = JSON.stringify({ content: char });
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              // Small delay for smooth streaming effect
+              await new Promise(resolve => setTimeout(resolve, 5));
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          },
+        });
+
+        return new Response(readableStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        });
+      }
+
+      // If workflow failed, fall through to GPT-4
+      console.log(`[N8N] Workflow failed, falling back to GPT-4`);
+    }
+
+    // Build dynamic system prompt
+    const systemPrompt = buildSystemPrompt({
+      specialistId,
+      userSettings,
+    });
+
     // Prepare messages
     const apiMessages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       ...messages.map((msg: { role: string; content: string }) => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,

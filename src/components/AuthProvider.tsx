@@ -43,10 +43,7 @@ export default function AuthProvider({ children, initialUser }: AuthProviderProp
 
   // Sync auth user with chat store - using callback to avoid stale closures
   const syncUserState = useCallback(() => {
-    console.log('[AUTH PROVIDER] syncUserState called, isInitialized:', isInitialized, 'user:', user?.email || 'none');
-
     if (!isInitialized) {
-      console.log('[AUTH PROVIDER] Not initialized yet, skipping sync');
       return;
     }
 
@@ -54,26 +51,19 @@ export default function AuthProvider({ children, initialUser }: AuthProviderProp
 
     // Only update if user ID actually changed
     if (currentUserId !== previousUserId.current) {
-      console.log('[AUTH PROVIDER] User changed from', previousUserId.current, 'to', currentUserId);
+      console.log('[AUTH PROVIDER] User changed:', previousUserId.current?.slice(0, 8), '->', currentUserId?.slice(0, 8));
       previousUserId.current = currentUserId;
 
       if (user) {
-        console.log('[AUTH PROVIDER] Setting current user in chat store:', user.email);
         // User logged in - sync to chatStore (this will load their sessions)
         setCurrentUser(user);
         hasInitializedChat.current = true;
-      } else {
-        console.log('[AUTH PROVIDER] Clearing user, loading from storage');
-        // No user - clear and load guest sessions
+      } else if (hasInitializedChat.current) {
+        // User logged out - only clear if we had initialized before
+        console.log('[AUTH PROVIDER] User logged out, clearing chat store');
         setCurrentUser(null);
-        // Only load from storage if we had a user before (sign out scenario)
-        // or if this is the first initialization
-        if (hasInitializedChat.current || !previousUserId.current) {
-          loadFromStorage();
-        }
+        loadFromStorage();
       }
-    } else {
-      console.log('[AUTH PROVIDER] User ID unchanged, no sync needed');
     }
   }, [user, isInitialized, setCurrentUser, loadFromStorage]);
 

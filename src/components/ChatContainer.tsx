@@ -40,27 +40,60 @@ export default function ChatContainer() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(0);
+  const userScrolledUpRef = useRef(false);
+
+  // Check if user is near bottom of scroll container
+  const isNearBottom = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return true;
+    const threshold = 100; // pixels from bottom
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  }, []);
+
+  // Track user scroll position
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      userScrolledUpRef.current = !isNearBottom();
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [isNearBottom]);
 
   // Scroll to bottom - only when message count changes or streaming starts
   useEffect(() => {
     const messageCount = messages.length;
     const shouldScroll = messageCount !== lastMessageCountRef.current || isLoading;
 
-    if (shouldScroll) {
+    if (shouldScroll && !userScrolledUpRef.current) {
       lastMessageCountRef.current = messageCount;
       messagesEndRef.current?.scrollIntoView({ behavior: isStreaming ? 'instant' : 'smooth' });
+    } else if (messageCount !== lastMessageCountRef.current) {
+      lastMessageCountRef.current = messageCount;
     }
   }, [messages.length, isLoading, isStreaming]);
 
-  // Scroll during streaming - but throttled
+  // Scroll during streaming - but only if user hasn't scrolled up
   useEffect(() => {
-    if (isStreaming) {
+    if (isStreaming && !userScrolledUpRef.current) {
       const interval = setInterval(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+        if (!userScrolledUpRef.current) {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+        }
       }, 150); // Reduced frequency from 100ms to 150ms
       return () => clearInterval(interval);
     }
   }, [isStreaming]);
+
+  // Reset scroll-up flag when user sends a new message
+  useEffect(() => {
+    if (isLoading) {
+      userScrolledUpRef.current = false;
+    }
+  }, [isLoading]);
 
   // ============================================
   // GUEST LANDING PAGE - Clean design with large input
@@ -145,6 +178,8 @@ export default function ChatContainer() {
  * Shown when chat is empty for logged-in users
  */
 const WelcomeScreen = memo(function WelcomeScreen() {
+  const t = useTranslation();
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] text-center animate-fadeIn">
       {/* Animated Logo with Rabbit Emoji - Premium */}
@@ -167,7 +202,7 @@ const WelcomeScreen = memo(function WelcomeScreen() {
       </div>
 
       <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-3">
-        Murakaza neza kuri{' '}
+        {t.welcome}{' '}
         <span className="bg-gradient-to-r from-green-500 via-yellow-500 to-blue-500
           bg-clip-text text-transparent font-bold
           hover:from-green-400 hover:via-yellow-400 hover:to-blue-400
@@ -177,16 +212,16 @@ const WelcomeScreen = memo(function WelcomeScreen() {
       </h2>
 
       <p className="text-gray-500 dark:text-gray-400 max-w-md mb-10 text-sm">
-        AI y&apos;Abanyarwanda - Umufasha wawe w&apos;ubwenge
+        {t.tagline}
       </p>
 
       {/* Suggestion chips - grid layout */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-lg">
-        {suggestions.map((suggestion, index) => (
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 max-w-lg w-full px-2 sm:px-0">
+        {[t.suggestion1, t.suggestion2, t.suggestion3, t.suggestion4, t.suggestion5, t.suggestion6].map((text, index) => (
           <SuggestionChip
             key={index}
-            text={suggestion.text}
-            icon={suggestion.icon}
+            text={text}
+            icon={suggestionIcons[index]}
             delay={index * 80}
           />
         ))}
@@ -195,15 +230,8 @@ const WelcomeScreen = memo(function WelcomeScreen() {
   );
 });
 
-// Suggestion data - Kinyarwanda suggestions
-const suggestions = [
-  { text: 'Njye ndi nde?', icon: '🐰' },
-  { text: 'Mfashe kwandika code', icon: '💻' },
-  { text: 'Sobanura iby\'ubuzima', icon: '🏥' },
-  { text: 'Ibitekerezo by\'ubucuruzi', icon: '💼' },
-  { text: 'Mfashe kwiga', icon: '📚' },
-  { text: 'Andika inkuru', icon: '✨' },
-];
+// Suggestion icons - texts come from translations
+const suggestionIcons = ['🐰', '💻', '🏥', '💼', '📚', '✨'];
 
 // Suggestion chip component - Premium Design
 interface SuggestionChipProps {

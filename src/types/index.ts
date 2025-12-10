@@ -146,56 +146,43 @@ export interface ThemeState {
 }
 
 // ============================================
-// AGENT TYPES (for multi-agent support)
+// AGENT TYPES (DEPRECATED - kept for backward compatibility)
 // ============================================
+// NOTE: The multi-agent system has been replaced by n8n workflows.
+// Domain expertise is now handled automatically through workflow routing.
+// These types are kept for database compatibility with existing sessions.
 
-// Available agent types - extend this as you add new agents
+/**
+ * @deprecated Use n8n workflows instead. This type is kept for backward compatibility.
+ */
 export type AgentType = 'default' | 'tax' | 'legal' | 'business' | 'creative';
 
-// Agent configuration
+/**
+ * @deprecated Use n8n workflows instead.
+ */
 export interface AgentConfig {
   id: AgentType;
   name: string;
   description: string;
-  icon: string; // Emoji or icon identifier
-  color: string; // Accent color for the agent
+  icon: string;
+  color: string;
 }
 
-// Predefined agent configurations
+/**
+ * @deprecated Use n8n workflows instead.
+ * Only 'default' is used now - Bakame handles all capabilities through n8n.
+ */
 export const AGENTS: Record<AgentType, AgentConfig> = {
   default: {
     id: 'default',
     name: 'Bakame',
-    description: 'AI y\'Abanyarwanda',
+    description: 'AI y\'Abanyarwanda - gufasha mu bintu byose',
     icon: '🐰',
     color: '#22C55E',
   },
-  tax: {
-    id: 'tax',
-    name: 'Tax Advisor',
-    description: 'Expert tax guidance and planning',
-    icon: '📊',
-    color: '#10B981',
-  },
-  legal: {
-    id: 'legal',
-    name: 'Legal Assistant',
-    description: 'Legal information and document help',
-    icon: '⚖️',
-    color: '#8B5CF6',
-  },
-  business: {
-    id: 'business',
-    name: 'Business Consultant',
-    description: 'Business strategy and operations',
-    icon: '💼',
-    color: '#F59E0B',
-  },
-  creative: {
-    id: 'creative',
-    name: 'Creative Writer',
-    description: 'Creative writing and content creation',
-    icon: '✨',
-    color: '#EC4899',
-  },
+  // Legacy entries kept for existing database sessions
+  tax: { id: 'tax', name: 'Tax (Legacy)', description: '', icon: '📊', color: '#10B981' },
+  legal: { id: 'legal', name: 'Legal (Legacy)', description: '', icon: '⚖️', color: '#8B5CF6' },
+  business: { id: 'business', name: 'Business (Legacy)', description: '', icon: '💼', color: '#F59E0B' },
+  creative: { id: 'creative', name: 'Creative (Legacy)', description: '', icon: '✨', color: '#EC4899' },
 };
