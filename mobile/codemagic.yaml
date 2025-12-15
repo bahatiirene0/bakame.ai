@@ -44,7 +44,7 @@ workflows:
       - name: Build AAB for release
         script: |
           flutter build appbundle --release \
-            --dart-define=API_URL=https://bakame.ai \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
             --dart-define=ENVIRONMENT=production
     artifacts:
       - build/**/outputs/**/*.aab
@@ -78,7 +78,7 @@ workflows:
       - name: Build APK for debug
         script: |
           flutter build apk --debug \
-            --dart-define=API_URL=https://bakame.ai \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
             --dart-define=ENVIRONMENT=development
     artifacts:
       - build/**/outputs/**/*.apk
@@ -127,7 +127,7 @@ workflows:
           flutter build ipa --release \
             --build-name=1.0.0 \
             --build-number=$BUILD_NUMBER \
-            --dart-define=API_URL=https://bakame.ai \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
             --dart-define=ENVIRONMENT=production \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
@@ -167,7 +167,7 @@ workflows:
       - name: Build iOS Debug
         script: |
           flutter build ios --debug --no-codesign \
-            --dart-define=API_URL=https://bakame.ai \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
             --dart-define=ENVIRONMENT=development
     artifacts:
       - build/ios/iphoneos/*.app
