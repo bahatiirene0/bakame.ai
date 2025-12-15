@@ -25,24 +25,40 @@ const MAX_BATCH_SIZE = 100;
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
-// Use OpenRouter for embeddings (same key as chat)
-const useOpenRouter = !!process.env.OPENROUTER_API_KEY;
-const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
+// Lazy-initialized OpenAI client for embeddings
+let _embeddingsClient: OpenAI | null = null;
+let _useOpenRouter: boolean | null = null;
 
-// Initialize client (OpenRouter or OpenAI fallback)
-const openai = new OpenAI({
-  apiKey: apiKey,
-  baseURL: useOpenRouter ? 'https://openrouter.ai/api/v1' : undefined,
-  timeout: 30000,
-  maxRetries: 2,
-  defaultHeaders: useOpenRouter ? {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'X-Title': 'Bakame AI',
-  } : undefined,
-});
+function getEmbeddingsClient(): OpenAI {
+  if (!_embeddingsClient) {
+    _useOpenRouter = !!process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
-// Use the correct model name based on provider
-const MODEL_NAME = useOpenRouter ? 'openai/text-embedding-3-small' : 'text-embedding-3-small';
+    if (!apiKey) {
+      throw new Error('No API key for embeddings. Set OPENROUTER_API_KEY or OPENAI_API_KEY.');
+    }
+
+    _embeddingsClient = new OpenAI({
+      apiKey: apiKey,
+      baseURL: _useOpenRouter ? 'https://openrouter.ai/api/v1' : undefined,
+      timeout: 30000,
+      maxRetries: 2,
+      defaultHeaders: _useOpenRouter ? {
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': 'Bakame AI',
+      } : undefined,
+    });
+  }
+  return _embeddingsClient;
+}
+
+// Get model name based on provider (lazy)
+function getModelName(): string {
+  if (_useOpenRouter === null) {
+    _useOpenRouter = !!process.env.OPENROUTER_API_KEY;
+  }
+  return _useOpenRouter ? 'openai/text-embedding-3-small' : 'text-embedding-3-small';
+}
 
 // ============================================
 // Types
@@ -88,8 +104,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const response = await openai.embeddings.create({
-        model: MODEL_NAME,
+      const response = await getEmbeddingsClient().embeddings.create({
+        model: getModelName(),
         input: cleanedText,
         encoding_format: 'float',
       });
@@ -179,8 +195,8 @@ export async function generateBatchEmbeddings(texts: string[]): Promise<BatchEmb
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        const response = await openai.embeddings.create({
-          model: MODEL_NAME,
+        const response = await getEmbeddingsClient().embeddings.create({
+          model: getModelName(),
           input: validTexts.map((v) => v.text),
           encoding_format: 'float',
         });
@@ -255,9 +271,10 @@ export function estimateTokenCount(text: string, language: string = 'en'): numbe
  * Get embedding model info
  */
 export function getEmbeddingModelInfo() {
+  const isOpenRouter = !!process.env.OPENROUTER_API_KEY;
   return {
-    model: MODEL_NAME,
-    provider: useOpenRouter ? 'OpenRouter' : 'OpenAI',
+    model: getModelName(),
+    provider: isOpenRouter ? 'OpenRouter' : 'OpenAI',
     dimensions: EMBEDDING_DIMENSIONS,
     maxBatchSize: MAX_BATCH_SIZE,
     costPer1MTokens: 0.02, // USD

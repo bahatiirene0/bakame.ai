@@ -15,23 +15,39 @@ import type { MemoryType } from '@/lib/supabase/types';
 // Configuration
 // ============================================
 
-// Use OpenRouter for extraction (same key as chat and embeddings)
-const useOpenRouter = !!process.env.OPENROUTER_API_KEY;
-const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
+// Lazy-initialized OpenAI client for memory extraction
+let _extractorClient: OpenAI | null = null;
+let _extractorUseOpenRouter: boolean | null = null;
 
-const openai = new OpenAI({
-  apiKey: apiKey,
-  baseURL: useOpenRouter ? 'https://openrouter.ai/api/v1' : undefined,
-  timeout: 30000,
-  defaultHeaders: useOpenRouter ? {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'X-Title': 'Bakame AI',
-  } : undefined,
-});
+function getExtractorClient(): OpenAI {
+  if (!_extractorClient) {
+    _extractorUseOpenRouter = !!process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
-// Use a cheaper model for extraction (GPT-4o-mini)
-// OpenRouter uses 'openai/' prefix
-const EXTRACTION_MODEL = useOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+    if (!apiKey) {
+      throw new Error('No API key for memory extraction. Set OPENROUTER_API_KEY or OPENAI_API_KEY.');
+    }
+
+    _extractorClient = new OpenAI({
+      apiKey: apiKey,
+      baseURL: _extractorUseOpenRouter ? 'https://openrouter.ai/api/v1' : undefined,
+      timeout: 30000,
+      defaultHeaders: _extractorUseOpenRouter ? {
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': 'Bakame AI',
+      } : undefined,
+    });
+  }
+  return _extractorClient;
+}
+
+// Get extraction model (lazy)
+function getExtractionModel(): string {
+  if (_extractorUseOpenRouter === null) {
+    _extractorUseOpenRouter = !!process.env.OPENROUTER_API_KEY;
+  }
+  return _extractorUseOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+}
 
 // ============================================
 // Types
@@ -154,8 +170,8 @@ If nothing worth remembering, return: { "memories": [] }
 ${existingContext}`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: EXTRACTION_MODEL,
+    const response = await getExtractorClient().chat.completions.create({
+      model: getExtractionModel(),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Analyze this conversation:\n\n${conversation}` },
@@ -238,8 +254,8 @@ export async function summarizeMemories(
   }
 
   try {
-    const response = await openai.chat.completions.create({
-      model: EXTRACTION_MODEL,
+    const response = await getExtractorClient().chat.completions.create({
+      model: getExtractionModel(),
       messages: [
         {
           role: 'system',

@@ -19,10 +19,21 @@ import { logger } from '@/lib/logger';
 import { captureException } from '@/lib/sentry';
 import { env } from '@/lib/env';
 
-// Initialize OpenAI client for image generation
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
-});
+// Lazy-initialized OpenAI client for DALL-E image generation
+// This is separate from the chat client as DALL-E requires direct OpenAI key
+let _dalleClient: OpenAI | null = null;
+
+function getDalleClient(): OpenAI {
+  if (!_dalleClient) {
+    if (!env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY required for image generation (DALL-E).');
+    }
+    _dalleClient = new OpenAI({
+      apiKey: env.OPENAI_API_KEY,
+    });
+  }
+  return _dalleClient;
+}
 
 // Type for tool arguments
 type ToolArgs = Record<string, unknown>;
@@ -854,7 +865,7 @@ async function generateImage(args: ToolArgs): Promise<ToolResult> {
       promptPreview: prompt.substring(0, 100)
     });
 
-    const response = await openai.images.generate({
+    const response = await getDalleClient().images.generate({
       model: 'dall-e-3',
       prompt: prompt,
       n: 1,

@@ -46,30 +46,38 @@ import { FileAttachment } from '@/types';
 import { retrieveKnowledge, formatForSystemPrompt } from '@/lib/rag';
 import { getMemoryContext, extractMemories, storeMemories } from '@/lib/memory';
 
-// Determine which provider to use (OpenRouter or OpenAI direct)
-const useOpenRouter = hasOpenRouter;
-const apiKey = env.OPENROUTER_API_KEY || env.OPENAI_API_KEY;
+// Lazy-initialized OpenAI client (created on first request, not at build time)
+let _openaiClient: OpenAI | null = null;
 
-// Initialize client (OpenRouter uses OpenAI-compatible API)
-const openai = new OpenAI({
-  apiKey: apiKey,
-  baseURL: useOpenRouter ? 'https://openrouter.ai/api/v1' : undefined,
-  timeout: 60000,
-  maxRetries: 2,
-  defaultHeaders: useOpenRouter ? {
-    'HTTP-Referer': env.NEXT_PUBLIC_APP_URL || 'https://bakame.ai',
-    'X-Title': 'Bakame AI',
-  } : undefined,
-});
+function getOpenAIClient(): OpenAI {
+  if (!_openaiClient) {
+    const useOpenRouter = hasOpenRouter;
+    const apiKey = env.OPENROUTER_API_KEY || env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error('No AI API key configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.');
+    }
+
+    _openaiClient = new OpenAI({
+      apiKey: apiKey,
+      baseURL: useOpenRouter ? 'https://openrouter.ai/api/v1' : undefined,
+      timeout: 60000,
+      maxRetries: 2,
+      defaultHeaders: useOpenRouter ? {
+        'HTTP-Referer': env.NEXT_PUBLIC_APP_URL || 'https://bakame.ai',
+        'X-Title': 'Bakame AI',
+      } : undefined,
+    });
+
+    logger.info('Chat API client initialized', {
+      provider: useOpenRouter ? 'OpenRouter' : 'OpenAI Direct',
+    });
+  }
+  return _openaiClient;
+}
 
 // Default model - OpenRouter format: provider/model
 const MODEL = env.OPENROUTER_MODEL || env.OPENAI_MODEL || 'openai/gpt-4o-mini';
-
-// Log provider configuration on startup
-logger.info('Chat API initialized', {
-  provider: useOpenRouter ? 'OpenRouter' : 'OpenAI Direct',
-  model: MODEL,
-});
 
 /**
  * POST handler for chat API
@@ -383,6 +391,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const openai = getOpenAIClient();
     const stream = await openai.chat.completions.create({
       model: MODEL,
       messages: apiMessages,
@@ -598,7 +607,7 @@ export async function POST(request: NextRequest) {
             ];
 
             // Get final response (streaming)
-            const finalStream = await openai.chat.completions.create({
+            const finalStream = await getOpenAIClient().chat.completions.create({
               model: MODEL,
               messages: messagesWithTools,
               temperature: 0.7,
