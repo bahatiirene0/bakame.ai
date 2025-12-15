@@ -7,7 +7,7 @@
  * All actions verify admin role before executing.
  */
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServerSupabaseAdminClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { UserRole, SubscriptionPlan, SubscriptionStatus, Json, User, Subscription, AdminAuditLog, AdminSetting, UsageLog } from '@/lib/supabase/types';
@@ -24,25 +24,34 @@ type AnySupabase = any;
 // ============================================
 
 async function verifyAdmin(): Promise<{ supabase: AnySupabase; userId: string }> {
-  // Cast to any to avoid Supabase type inference issues
-  const supabase = await createServerSupabaseClient() as AnySupabase;
-  const { data: { user } } = await supabase.auth.getUser();
+  // First, verify user is authenticated using regular client (needs cookies)
+  const authClient = await createServerSupabaseClient() as AnySupabase;
+  const { data: { user } } = await authClient.auth.getUser();
 
   if (!user) {
     throw new Error('Unauthorized: Not authenticated');
   }
 
-  const { data: profile } = await supabase
+  // Check admin role using regular client (user can read their own profile)
+  const { data: profile, error: profileError } = await authClient
     .from('users')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
+
+  if (profileError) {
+    throw new Error(`Database error: ${profileError.message}`);
+  }
 
   if (!profile || profile.role !== 'admin') {
     throw new Error('Unauthorized: Admin access required');
   }
 
-  return { supabase, userId: user.id };
+  // Return admin client (service role key) for database operations
+  // This bypasses RLS for admin queries
+  const adminClient = await createServerSupabaseAdminClient() as AnySupabase;
+
+  return { supabase: adminClient, userId: user.id };
 }
 
 // ============================================
@@ -180,25 +189,38 @@ export async function getUserById(userId: string) {
     .from('users')
     .select('*')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+  if (!user) throw new Error('User not found');
 
   // Get user stats (counts only - no content)
+  // First get session IDs for this user, then count messages in those sessions
+  const { data: userSessions } = await supabase
+    .from('chat_sessions')
+    .select('id')
+    .eq('user_id', userId);
+
+  const sessionIds = (userSessions || []).map((s: { id: string }) => s.id);
+
   const [sessionsResult, messagesResult, subscriptionResult] = await Promise.all([
     supabase
       .from('chat_sessions')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId),
-    supabase
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('session_id', userId),
+    // Count messages in user's sessions
+    sessionIds.length > 0
+      ? supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .in('session_id', sessionIds)
+      : Promise.resolve({ count: 0 }),
+    // Use maybeSingle since user might not have a subscription
     supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', userId)
-      .single(),
+      .maybeSingle(),
   ]);
 
   return {
