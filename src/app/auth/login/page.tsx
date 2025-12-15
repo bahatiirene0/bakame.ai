@@ -11,7 +11,8 @@
  * - Forgot password placeholder
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';

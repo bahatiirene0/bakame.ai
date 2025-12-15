@@ -159,11 +159,11 @@ export function chunkDocument(text: string, options: ChunkOptions = {}): Chunk[]
  * @returns Array of Q&A chunks
  */
 export function chunkQAPairs(text: string): Chunk[] {
-  // Common Q&A patterns
+  // Common Q&A patterns (using [\s\S] instead of 's' flag for compatibility)
   const qaPatterns = [
-    /(?:Q:|Question:|FAQ:)\s*(.*?)\n+(?:A:|Answer:)\s*(.*?)(?=(?:Q:|Question:|FAQ:)|$)/gis,
-    /\*\*(.+?)\*\*\n+(.*?)(?=\*\*|$)/gs, // Markdown bold questions
-    /###\s*(.+?)\n+(.*?)(?=###|$)/gs, // Markdown h3 questions
+    /(?:Q:|Question:|FAQ:)\s*([\s\S]*?)\n+(?:A:|Answer:)\s*([\s\S]*?)(?=(?:Q:|Question:|FAQ:)|$)/gi,
+    /\*\*(.+?)\*\*\n+([\s\S]*?)(?=\*\*|$)/g, // Markdown bold questions
+    /###\s*(.+?)\n+([\s\S]*?)(?=###|$)/g, // Markdown h3 questions
   ];
 
   const chunks: Chunk[] = [];

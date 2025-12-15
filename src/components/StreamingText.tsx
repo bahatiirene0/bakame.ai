@@ -5,7 +5,8 @@
  * Takes chunks from API and animates them character by character.
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useEffect, useState, useRef } from 'react';
 

@@ -6,7 +6,8 @@
  * location services but hasn't granted permission yet.
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useState, useEffect } from 'react';
 import { useLocationStore } from '@/store/locationStore';

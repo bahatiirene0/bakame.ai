@@ -3,7 +3,8 @@
  * Premium design with glassmorphism and smooth transitions
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';

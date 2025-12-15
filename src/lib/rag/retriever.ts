@@ -231,7 +231,7 @@ function buildContext(
 } {
   const { chunks, qa } = searchResult;
   const sources: RetrievalResult['sources'] = [];
-  let contextParts: string[] = [];
+  const contextParts: string[] = [];
   let currentTokens = 0;
 
   // Determine confidence based on results

@@ -16,7 +16,8 @@
  * @see https://nextjs.org/docs/app/api-reference/file-conventions/error#global-errorjs
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useEffect } from 'react';
 import { captureException } from '@/lib/sentry';

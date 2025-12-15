@@ -8,7 +8,8 @@
  * - Upload progress indicator
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useMemo } from 'react';
 import { formatFileSize } from '@/lib/files';

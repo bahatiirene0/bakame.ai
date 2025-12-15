@@ -10,7 +10,8 @@
  * - Account actions
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';

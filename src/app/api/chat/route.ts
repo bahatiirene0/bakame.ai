@@ -404,7 +404,7 @@ export async function POST(request: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          let toolCalls: Array<{
+          const toolCalls: Array<{
             id: string;
             function: { name: string; arguments: string };
           }> = [];

@@ -87,19 +87,24 @@ export function Chart({ data, type, title, height = 200 }: ChartProps) {
   }
 
   if (type === 'donut') {
-    // Calculate segments for donut chart
-    let cumulativePercent = 0;
-    const segments = data.map((item, index) => {
+    // Calculate segments for donut chart using reduce to avoid mutation
+    const segments = data.reduce<Array<{
+      label: string;
+      value: number;
+      color: string;
+      percent: number;
+      offset: number;
+    }>>((acc, item, index) => {
       const percent = (item.value / total) * 100;
-      const segment = {
+      const offset = acc.length > 0 ? acc[acc.length - 1].offset + acc[acc.length - 1].percent : 0;
+      acc.push({
         ...item,
         percent,
-        offset: cumulativePercent,
+        offset,
         color: item.color || `hsl(${index * 60}, 70%, 50%)`,
-      };
-      cumulativePercent += percent;
-      return segment;
-    });
+      });
+      return acc;
+    }, []);
 
     return (
       <div className="bg-white dark:bg-[#111111] rounded-xl border border-gray-200 dark:border-gray-800 p-6">

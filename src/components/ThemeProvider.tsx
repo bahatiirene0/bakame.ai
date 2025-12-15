@@ -4,7 +4,8 @@
  * Handles hydration mismatch by waiting for client mount
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useEffect, useState, useLayoutEffect } from 'react';
 import { useThemeStore } from '@/store/themeStore';

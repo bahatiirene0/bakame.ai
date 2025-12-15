@@ -255,7 +255,7 @@ async function calculate(args: ToolArgs): Promise<ToolResult> {
 
   try {
     // Pre-process common patterns
-    let processed = expression
+    const processed = expression
       .toLowerCase()
       .replace(/\s+/g, '')
       // Handle percentages: "15% of 200" -> "0.15 * 200"

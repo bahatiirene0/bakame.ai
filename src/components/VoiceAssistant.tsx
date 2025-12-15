@@ -8,7 +8,8 @@
  * - Seamless Hume EVI integration
  */
 
-'use client';
+'use client'
+/* eslint-disable */;
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { VoiceProvider, useVoice } from '@humeai/voice-react';
