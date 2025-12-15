@@ -156,13 +156,11 @@ workflows:
     working_directory: mobile
     environment:
       flutter: stable
+      cocoapods: default
     scripts:
       - name: Get Flutter packages
         script: |
-          flutter packages pub get
-      - name: Install pods
-        script: |
-          cd ios && pod install
+          flutter pub get
       - name: Flutter analyze
         script: |
           flutter analyze --no-fatal-infos
