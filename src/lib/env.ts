@@ -21,8 +21,8 @@ import { z } from 'zod';
  * These are essential for the application to function
  */
 const coreSchema = z.object({
-  // OpenAI Configuration (Required)
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+  // OpenAI Configuration (Optional - can use OpenRouter instead)
+  OPENAI_API_KEY: z.string().optional(),
 
   // Supabase Configuration (Required)
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
