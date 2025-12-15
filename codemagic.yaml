@@ -1,0 +1,180 @@
+# Codemagic CI/CD Configuration for Bakame AI Mobile App
+# https://docs.codemagic.io/yaml/yaml-getting-started/
+
+definitions:
+  environment: &env
+    flutter: stable
+    xcode: latest
+    cocoapods: default
+
+workflows:
+  # Android Release Build
+  android-release:
+    name: Android Release
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: mobile
+    environment:
+      <<: *env
+      groups:
+        - google_play_credentials
+      android_signing:
+        - bakame_keystore
+      vars:
+        PACKAGE_NAME: "com.bakame.bakame_mobile"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Flutter test
+        script: |
+          flutter test
+      - name: Build AAB for release
+        script: |
+          flutter build appbundle --release \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
+            --dart-define=ENVIRONMENT=production
+    artifacts:
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - bakame.rw@gmail.com
+        notify:
+          success: true
+          failure: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+
+  # Android Debug Build (for testing)
+  android-debug:
+    name: Android Debug
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Build APK for debug
+        script: |
+          flutter build apk --debug \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
+            --dart-define=ENVIRONMENT=development
+    artifacts:
+      - build/**/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - bakame.rw@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # iOS Release Build
+  ios-release:
+    name: iOS Release
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: Bakame AI App Store Connect
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.bakame.bakame-mobile
+      flutter: stable
+      vars:
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+        APP_ID: # Your App Store Connect App ID
+    scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install pods
+        script: |
+          cd ios && pod install
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Flutter test
+        script: |
+          flutter test
+      - name: Build IPA for release
+        script: |
+          flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
+            --dart-define=ENVIRONMENT=production \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - bakame.rw@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Beta Testers
+
+  # iOS Debug Build (for testing)
+  ios-debug:
+    name: iOS Debug
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install pods
+        script: |
+          cd ios && pod install
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Build iOS Debug
+        script: |
+          flutter build ios --debug --no-codesign \
+            --dart-define=API_URL=https://bakame-ai-virid.vercel.app \
+            --dart-define=ENVIRONMENT=development
+    artifacts:
+      - build/ios/iphoneos/*.app
+    publishing:
+      email:
+        recipients:
+          - bakame.rw@gmail.com
+        notify:
+          success: true
+          failure: true
