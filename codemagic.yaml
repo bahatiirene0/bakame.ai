@@ -105,7 +105,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
-        APP_ID: # Your App Store Connect App ID
+        # APP_ID: "YOUR_APP_STORE_ID" # Add when ready for App Store
     scripts:
       - name: Set up code signing settings on Xcode project
         script: |
